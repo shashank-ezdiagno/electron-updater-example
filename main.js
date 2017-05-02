@@ -4,6 +4,9 @@
 const {app, BrowserWindow, Menu, protocol, ipcMain} = require('electron');
 const log = require('electron-log');
 const {autoUpdater} = require("electron-updater");
+const isDev = require('electron-is-dev');
+const path = require('path')
+const url = require('url')
 
 //-------------------------------------------------------------------
 // Logging
@@ -22,25 +25,26 @@ log.info('App starting...');
 //
 // THIS SECTION IS NOT REQUIRED
 //-------------------------------------------------------------------
-let template = []
-if (process.platform === 'darwin') {
-  // OS X
   const name = app.getName();
-  template.unshift({
-    label: name,
-    submenu: [
-      {
-        label: 'About ' + name,
-        role: 'about'
-      },
-      {
-        label: 'Quit',
-        accelerator: 'Command+Q',
-        click() { app.quit(); }
-      },
+  template = [{
+        label: name,
+        submenu: [
+            { label: "About " + name, role: 'about' },
+            { type: "separator" },
+            { label: "Force Reload", accelerator: "CmdOrCtrl+Shift+R", click: function() { win.webContents.reloadIgnoringCache(); }},
+            { label: "Quit", accelerator: "CmdOrCtrl+Q", click: function() { app.quit(); }}
+        ]}, {
+        label: "Edit",
+        submenu: [
+            { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
+            { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
+            { type: "separator" },
+            { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
+            { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
+            { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
+            { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
+        ]}
     ]
-  })
-}
 
 
 //-------------------------------------------------------------------
@@ -56,15 +60,24 @@ let win;
 
 function sendStatusToWindow(text) {
   log.info(text);
-  win.webContents.send('message', text);
+  console.log(text);
 }
 function createDefaultWindow() {
-  win = new BrowserWindow();
-  win.webContents.openDevTools();
+  win = new BrowserWindow({width: 800, height: 600,
+    webPreferences: {
+        nodeIntegration: false
+    }});
+  if(isDev){
+    win.webContents.openDevTools();
+  }
   win.on('closed', () => {
     win = null;
   });
-  win.loadURL(`file://${__dirname}/version.html#v${app.getVersion()}`);
+  win.loadURL(url.format({
+    pathname: path.join('192.168.0.104:8000', 'lab', 'lab'),
+    protocol: 'http:',
+    slashes: true
+  }));
   return win;
 }
 autoUpdater.on('checking-for-update', () => {
@@ -122,7 +135,7 @@ autoUpdater.on('update-downloaded', (ev, info) => {
   // In your application, you don't need to wait 5 seconds.
   // You could call autoUpdater.quitAndInstall(); immediately
   setTimeout(function() {
-    autoUpdater.quitAndInstall();  
+    autoUpdater.quitAndInstall();
   }, 5000)
 })
 
