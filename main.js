@@ -2,11 +2,18 @@
 // See LICENSE for details.
 
 const {app, BrowserWindow, Menu, protocol, ipcMain} = require('electron');
+const {dialog} = require('electron');
 const log = require('electron-log');
 const {autoUpdater} = require("electron-updater");
 const isDev = require('electron-is-dev');
 const path = require('path')
 const url = require('url')
+var eNotify = null
+const isNetworkConnected = require('is-online');
+var config = {
+  onstart : true,
+  status : 'offline'
+}
 
 //-------------------------------------------------------------------
 // Logging
@@ -45,7 +52,61 @@ log.info('App starting...');
             { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
         ]}
     ]
+function isOnline(user_callback){
+    /**
+     * Show a warning to the user.
+     * You can retry in the dialog until a internet connection
+     * is active.
+     */
+    var message = function(){
+        return dialog.showMessageBox({
+            title:"There's no internet",
+            message:"No internet available, do you want to try again?",
+            type:'warning',
+            buttons:["Try again please","I don't want to work anyway"],
+            defaultId: 0
+        },function(index){
+            // if clicked "Try again please"
+            if(index == 0){
+                execute(true);
+            }
+        })
+    };
 
+    var execute = function(force_message){
+        isNetworkConnected().then(online=> {
+          if(online){
+              // Execute action if internet available.
+              log.info(config.status)
+              if(config.status=='offline'||config.onstart){
+                  user_callback()
+                  // win.loadURL(url.format({
+                  //   pathname: path.join('192.168.0.105:8000', 'lab', 'lab'),
+                  //   protocol: 'http:',
+                  //   slashes: true
+                  // }));
+                  win.loadURL(url.format({
+                    pathname: path.join(__dirname, 'browser.html'),
+                    protocol: 'file:',
+                    slashes: true
+                  }));
+              }
+              config.status = 'online'
+          }else{
+              // Show warning to user
+              // And "retry" to connect
+              if (config.status == 'online' || force_message || config.onstart){
+                message();
+              }
+              config.status = 'offline'
+          }
+          config.onstart = false
+        })
+    };
+
+    // Verify for first time
+    execute(false);
+}
 
 //-------------------------------------------------------------------
 // Open a window that displays the version
@@ -63,10 +124,11 @@ function sendStatusToWindow(text) {
   console.log(text);
 }
 function createDefaultWindow() {
-  win = new BrowserWindow({width: 800, height: 600,
-    webPreferences: {
-        nodeIntegration: false
-    }});
+  win = new BrowserWindow({width: 1600, height: 1200,
+        // webPreferences: {
+        //     nodeIntegration: false
+        // }
+    });
   if(isDev){
     win.webContents.openDevTools();
   }
@@ -74,10 +136,19 @@ function createDefaultWindow() {
     win = null;
   });
   win.loadURL(url.format({
-    pathname: path.join('192.168.0.104:8000', 'lab', 'lab'),
-    protocol: 'http:',
-    slashes: true
-  }));
+                    pathname: path.join(__dirname, 'browser.html'),
+                    protocol: 'file:',
+                    slashes: true
+                  }));
+  //win.setFullScreen(true)
+  var eNotify = require('electron-notify');
+  // Change config options
+  eNotify.setConfig({
+      appIcon: path.join(__dirname, 'images/icon.png'),
+      displayTime: 3000
+  });
+  // Use it, will be executed only if there's an active internet connection.
+  //var interval = setInterval(function() { isOnline(function(){eNotify.notify({ title: 'Internet Status', text: 'Internet Connected,reloading page' });}); }, 10000);
   return win;
 }
 autoUpdater.on('checking-for-update', () => {
