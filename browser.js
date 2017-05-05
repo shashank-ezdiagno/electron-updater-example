@@ -66,7 +66,9 @@ onload = function() {
             nodeIntegration: false
           }
      });
-    win.webContents.openDevTools();
+    if(isDev){
+      win.webContents.openDevTools();
+    }
     win.loadURL(e.url);
   }
 })
