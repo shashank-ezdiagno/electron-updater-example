@@ -1,6 +1,7 @@
 window.onresize = doLayout;
 var isLoading = false;
 const {shell} = require('electron')
+const isDev = require('electron-is-dev');
 onload = function() {
   var webview = document.querySelector('webview');
   Offline.options = {checks: {xhr: {url: 'https://www.google.com'}}};
@@ -273,12 +274,14 @@ function handleLoadCommit() {
   document.querySelector('#location').value = webview.getURL();
   document.querySelector('#back').disabled = !webview.canGoBack();
   document.querySelector('#forward').disabled = !webview.canGoForward();
-  webview.openDevTools();
-  var remote = require('electron').remote;
-  var win = remote.getCurrentWindow();
-  win.webContents.session.clearCache(function(){
-  //some callback.
-  });
+  if(isDev){
+    webview.openDevTools();
+    var remote = require('electron').remote;
+    var win = remote.getCurrentWindow();
+    win.webContents.session.clearCache(function(){
+    //some callback.
+    });
+   }
   closeBoxes();
 }
 
