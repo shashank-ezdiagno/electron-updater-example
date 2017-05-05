@@ -3,9 +3,9 @@
   <head>
     <link rel="stylesheet" href="browser.css">
     <link rel="icon" href="http://static.hubspot.com/favicon.ico">
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
-    <script src="browser.js"></script>
+    <script src="node_modules/jquery/dist/jquery.min.js" onload="window.$ = window.jQuery = module.exports;"></script>
     <script src="node_modules/offline-js/offline.min.js"></script>
+    <script src="browser.js"></script>
     <link rel="stylesheet" type="text/css" href="node_modules/offline-js/themes/offline-theme-default.css">
     <link rel="stylesheet" type="text/css" href="node_modules/offline-js/themes/offline-language-english.css">
   <body>
@@ -17,7 +17,7 @@
 
       <form id="location-form">
         <div id="center-column">
-          <input id="location" type="text" value="http://192.168.0.105:8000/lab/lab">
+          <input id="location" type="text" value="http://192.168.0.100:8000/lab/lab">
         </div>
         <input type="submit" value="Go">
       </form>
@@ -47,7 +47,7 @@
       </form>
     </div>
 
-    <webview src="http://192.168.0.105:8000/lab/lab"></webview>
+    <webview src="http://192.168.0.100:8000/lab/lab" allowpopups preload='./inject.js'></webview>
 
     <div id="sad-webview">
       <div id="sad-webview-icon">&#9762;</div>

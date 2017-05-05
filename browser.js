@@ -1,10 +1,16 @@
 window.onresize = doLayout;
 var isLoading = false;
-
+const {shell} = require('electron')
 onload = function() {
-  Offline.options = {checks: {xhr: {url: 'https://www.google.com'}}};
-  Offline.on("up", function() {navigateTo('http://192.168.0.105:8000/lab/lab')});
   var webview = document.querySelector('webview');
+  Offline.options = {checks: {xhr: {url: 'https://www.google.com'}}};
+  Offline.check();
+  Offline.on("up", function() {
+      navigateTo('http://192.168.0.100:8000/lab/lab')
+  });
+  Offline.on("down", function() {
+     webview.executeJavaScript('webViewTools.disableAnchors()')
+  })
   doLayout();
   document.querySelector('#back').onclick = function() {
     webview.goBack();
@@ -44,6 +50,25 @@ onload = function() {
   webview.addEventListener('did-fail-load', handleLoadAbort);
   webview.addEventListener('did-get-redirect-request', handleLoadRedirect);
   webview.addEventListener('did-finish-load', handleLoadCommit);
+  webview.addEventListener('new-window', (e) => {
+  console.log('new-window')
+  const protocol = require('url').parse(e.url).protocol
+  if (protocol === 'http:' || protocol === 'https:') {
+    //document.querySelector('#location').value = e.url;
+    //navigateTo(e.url)
+    const remote = require('electron').remote;
+    const BrowserWindow = remote.BrowserWindow;
+    var win = new BrowserWindow({
+          width: 1600,
+          height: 1200,
+          webPreferences: {
+            nodeIntegration: false
+          }
+     });
+    win.webContents.openDevTools();
+    win.loadURL(e.url);
+  }
+})
 
   // Test for the presence of the experimental <webview> zoom and find APIs.
   if (typeof(webview.setZoom) == "function" &&
@@ -248,6 +273,12 @@ function handleLoadCommit() {
   document.querySelector('#location').value = webview.getURL();
   document.querySelector('#back').disabled = !webview.canGoBack();
   document.querySelector('#forward').disabled = !webview.canGoForward();
+  webview.openDevTools();
+  var remote = require('electron').remote;
+  var win = remote.getCurrentWindow();
+  win.webContents.session.clearCache(function(){
+  //some callback.
+  });
   closeBoxes();
 }
 
@@ -274,6 +305,7 @@ function handleLoadAbort(event) {
   console.log('  url: ' + event.url);
   console.log('  isTopLevel: ' + event.isTopLevel);
   console.log('  type: ' + event.type);
+  //Offline.check();
 }
 
 function handleLoadRedirect(event) {

@@ -135,6 +135,14 @@ function createDefaultWindow() {
   win.on('closed', () => {
     win = null;
   });
+  win.webContents.on('new-window', (event, url) => {
+    log.info('new-window')
+    event.preventDefault()
+    const new_win = new BrowserWindow({show: false})
+    new_win.once('ready-to-show', () => new_win.show())
+    new_win.loadURL(url)
+    event.newGuest = new_win
+  })
   win.loadURL(url.format({
                     pathname: path.join(__dirname, 'browser.html'),
                     protocol: 'file:',
